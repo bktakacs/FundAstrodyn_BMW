@@ -83,4 +83,3 @@ ax.set_zlabel('z')
 ax.set_title('3D Sphere')
 ax.set_aspect('equal', adjustable='box')
 plt.show()
-

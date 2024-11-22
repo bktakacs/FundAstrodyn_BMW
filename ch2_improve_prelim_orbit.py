@@ -75,3 +75,20 @@ ybar_new = np.array(yeq(x))
 # Calculate residuals (off by 1e-14 for some reason, maybe from calculating inverse)
 btild_new = y - ybar_new
 print(btild_new)
+
+# Alternatively, for the example problem on page 128:
+data = np.array([[1, 2.5], [2, 8], [3, 19], [4, 50]])
+estimate = np.array([0.474, 3.360])
+
+def par_eq_1(x, estimate):
+    return estimate[0] * x**(estimate[1])
+
+def par_dif_1(x, estimate):
+    return x**(estimate[1])
+
+def par_diff_2(x, estimate):
+    return estimate[0] * x**(estimate[1]) * np.log(x)
+
+partial_diff_eqs = [par_dif_1, par_diff_2]
+
+differentialCorrectionAlgorithm(data, estimate, par_eq_1, partial_diff_eqs)

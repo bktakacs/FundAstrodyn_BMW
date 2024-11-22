@@ -24,93 +24,67 @@ def coordTransformMatrix(
 ###############################################################################
 
 def differentialCorrectionAlgorithm(
-        data: list,
-        estimate: list,
-        # parametric_equation,
-        # partial_differential_a,
-        # partial_differenital_b
+        data: np.ndarray,
+        estimate: np.ndarray,
+        par_eq,
+        partial_diff_eqs: list,
         ):
     """
-    Work in progress!
+    This function takes in orbital data (observations) and an intitial estimate of coefficients related to how x and y are related. We then use partial differentitation of the x-y relationship as well as the residuals of y to calculate an updated y. 
+
+    Parameters:
+    -----------
+    data : ndarray
+    estimate : ndarray
+    par_eq : callable
+    partial_diff_eqs : list of callables
+
+    Returns:
+    --------
+
     """
 
-    # 
     n = len(data) # number of observations
     p = len(estimate) # number of elements
 
-    # Set condition for while loop
-    condition = 0
-
-    if p > n:
-        raise ValueError('There are more unknowns than observations, there are not enough data to solve the problem.')
-    elif p == n:
-        condition = 'rms > 0'
-    else:
-        threshold = input('Input minimum RMS threshold for successive iterations (default is 0.001, enter \'d\' to use this value): ')
-        condition = 'rms - rms_previous > threshold'
-
-    print(condition)
 
     # Separate data into x and y
     x = data[:, 0]
     y = data[:, 1]
+    step = 0
 
-    # Calculate initial residuals
-    # Have user input parametric equation as lambda expression
-    param_eq_input = input("Enter parametric equation as a lambda expression: ")
-    param_eq = eval(param_eq_input)
+    # while eval(condition) and step < 1:
+    while step < 20:
 
-    ybar = np.array(param_eq(x))
+        step += 1
 
-    # Calculate residuals matrix ~b
-    b = y - ybar
-
-    rms = np.sqrt(np.sum([x**2 for x in b]) / n)
-
-    # Have user input pde dy/dp1, dy/dp2, etc.
-    pdes = []
-    for i in range(p):
-        pdes.append(input("Enter partially differentiated parametric equation as lambda expression (follow parameter order as in initial_estimate): "))
-    
-
-    while eval(condition):
-
-        rms_previous = rms
-        ybar_prev = ybar
-        b_prev = b
+        ybar = par_eq(x, estimate)
+        b = y - ybar
+        rms = np.sqrt(np.sum([x**2 for x in b]) / n)
 
         # Matrix Algebra
         # Build ~A matrix
         a = np.zeros((n, p))
         for index, val in enumerate(x):
             for j in range(p):
-                a[index][j] = eval(pdes[j])(val)
+                a[index][j] = partial_diff_eqs[j](val, estimate)
 
         ata = np.matmul(a.T, a)
         ata_inv = np.linalg.inv(ata)
         atb = np.matmul(a.T, b)
 
         deltaz = np.matmul(ata_inv, atb)
-
-        param_estimate = param_estimate + deltaz
-
-        ybar = np.array(param_eq(x))
-        b = y - ybar
-        rms = np.sqrt(np.sum([x**2 for x in b]) / 2)
-        print(rms)
-
-    print(param_estimate, rms)
+        estimate = estimate + deltaz
 
 
+        ybar_n = par_eq(x, estimate)
+        b_n = y - ybar_n
+        rms_n = np.sqrt(np.sum([x**2 for x in b_n]) / n)
 
-data = np.array([[2, 1], [3, 2]])
-ie = np.array([2, 3])
-# y = lambda x: ie[0] + x * ie[1]
-# print(y(data[:,0]))
-
-differentialCorrectionAlgorithm(data, ie)
-
-
+        if np.abs(rms_n - rms) < 0.001:
+            break
+        
+    print('Final Parameter Estimate:', estimate, '\nAfter ', step, ' steps.')
 
 ###############################################################################
 

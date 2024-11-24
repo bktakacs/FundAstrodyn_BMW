@@ -21,3 +21,10 @@ km_nmi = nmi_km**-1
 
 sec_day = (60*60*24)**-1
 sec_hour = (60*60)**-1
+
+mu_ft_s = 1.407646882e16 # ft^3 / s^2
+mu_nmi_s = mu_ft_s * (ft_nmi**3) # nmi^3 / s^2
+
+s_min = 1/60
+
+print(mu_nmi_s / s_min**2)

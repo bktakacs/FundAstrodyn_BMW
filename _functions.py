@@ -265,7 +265,7 @@ def sign(x):
 ###############################################################################
 
 def kepler_problem(
-        r0: list, v0: list, t: float, t0: float = 0.0, units: str = 'CANON'
+        r0: list, v0: list, t: float, t0: float = 0.0, units: str = 'CANON', tolerance: float = 1e-4, w: int = 3
 ):
     """
     Solves Kepler's problem for a given initial position vector, velocity vector, time at which to find r and v.
@@ -276,6 +276,8 @@ def kepler_problem(
     t (float): Time at which to find r and v.
     t0 (float): Initial time. Default is 0.0.
     units (str): Unit system.
+    tolerance (float): Tolerance for convergence in Newton iteration scheme
+    w (int): Number of decimal places to round results to
 
     Returns:
     r (list): Position vector [x, y, z] in the IJK system at time t.
@@ -298,18 +300,17 @@ def kepler_problem(
     # Step 1: Fro`m r0, v0, determine r0m and a -------------------------------
 
     # Orbital constants
-    h = np.dot(r0, v0.T) # angular momentum, DU^2/TU
-    p = h**2 / mu # orbital parameter, DU
+    h = np.dot(r0, v0.T) # not angular momentum, just saving space
     sme =v0m**2 / 2 - mu / r0m # specific mechanical energy, DU^2/TU^2
     a = - mu / (2 * sme) # semi-major axis, DU
 
-    # Step 2: Given (t - t0), solve universal time-of-flight (TOF) equation for x using Newton iteration scheme -------------------------------------------------
+    # Step 2: Given (t - t0), solve universal time-of-flight (TOF) equation for x using Newton iteration scheme -------------------------------------------
 
     # Define C(z), S(z)
     C = lambda z: (1 - np.cos(np.sqrt(z))) / 2
     S = lambda z: (np.sqrt(z) - np.sin(np.sqrt(z))) / np.sqrt(z**3)
 
-    # Newton Iteration Scheme -----------------------------------------------------
+    # Newton Iteration Scheme -------------------------------------------------
 
     # First guess for x:
     xn = mur * (t - t0) / a
@@ -324,7 +325,8 @@ def kepler_problem(
     tn = lambda xn: h / mu * xn**2 * C(z(xn)) + (1 - r0m/a) * xn**3 * S(z(xn)) / mur + r0m * xn / mur
 
     # Iterate until convergence (t ~ tn)
-    for n in range(10):
+    step = 1
+    while True:
         tn1 = tn(xn)
         xn1 = xn + (t - tn1) / dtdx(xn)
 
@@ -335,6 +337,11 @@ def kepler_problem(
         else:
             tn1 = tn2
             xn = xn1
+            step += 1
+        
+        if step > 100:
+            print('Newton iteration did not converge after 100 steps.')
+            break
 
     # Universal variable, x
     x = xn1
@@ -353,10 +360,10 @@ def kepler_problem(
 
     # Compute v using fdot & gdot
     v = fdot * r0 + gdot * v0
+    print(v)
     vm = magnitude(v)
 
     # Output results
-    w = 2 # number of places to round to
     print('\n'
         'Final Position Vector r(t={}) = {}{} I {} {} J {} {} K\n'
         'Final Velocity Vector v(t={}) = {}{} I {} {} J {} {} K\n'
@@ -365,3 +372,4 @@ def kepler_problem(
             t, sign(v[0]), np.round(np.abs(v[0]), w), sign(v[1]), np.round(np.abs(v[1]), w), sign(v[2]), np.round(np.abs(v[2]), w),
         ))
 
+###############################################################################

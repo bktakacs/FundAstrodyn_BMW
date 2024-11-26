@@ -256,3 +256,8 @@ def orbitalElemGibbs(
                 inc, angle_units
             )
         )
+
+###############################################################################
+
+def sign(x):
+    return '+' if x >= 0 else '-'
